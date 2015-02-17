@@ -21,7 +21,6 @@ import com.evernote.client.android.AsyncLinkedNoteStoreClient;
 import com.evernote.client.android.EvernoteSession;
 import com.evernote.client.android.EvernoteUtil;
 import com.evernote.client.android.OnClientCallback;
-import com.evernote.edam.notestore.NoteStore;
 import com.evernote.edam.type.Data;
 import com.evernote.edam.type.LinkedNotebook;
 import com.evernote.edam.type.Note;
@@ -39,17 +38,19 @@ public class MainActivity extends ActionBarActivity {
     private static final String CONSUMER_KEY = "app791";
     private static final String CONSUMER_SECRET = "47dd457bf08c50da";
     private static final EvernoteSession.EvernoteService EVERNOTE_SERVICE = EvernoteSession.EvernoteService.SANDBOX;
+    public static final Integer REQUEST_CODE = 0;
     private EvernoteSession mEvernoteSession;
     private Button mButtonLogin;
     private Button mButtonNewNote;
     private static final String LOGTAG = "MainActivity";
     private Button mButtonSelect;
     private String mSelectedNotebookGuid;
+    private Bitmap mImage;
 
     private OnClientCallback<Note> mNoteCreateCallback = new OnClientCallback<Note>() {
         @Override
         public void onSuccess(Note note) {
-            Toast.makeText(getApplicationContext(), "Nota guardada", Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(), "The note has been saved", Toast.LENGTH_LONG).show();
             removeDialog(101);
         }
 
@@ -86,7 +87,8 @@ public class MainActivity extends ActionBarActivity {
         mButtonNewNote.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                saveNote();
+                Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+                startActivityForResult(cameraIntent, 0);
             }
         });
     }
@@ -98,8 +100,8 @@ public class MainActivity extends ActionBarActivity {
     }
 
     public void saveNote() {
-        Bitmap image = BitmapFactory.decodeResource(getResources(), R.drawable.flor);
-        byte[] imageByte = convertBitmapImageToByteArray(image);
+//        mImage = BitmapFactory.decodeResource(getResources(), R.drawable.flor);
+        byte[] imageByte = convertBitmapImageToByteArray(mImage);
 
         String title = "Final test title";
         String content = "Final test content";
@@ -118,7 +120,7 @@ public class MainActivity extends ActionBarActivity {
 
         //TODO: Creating resource
         Resource resource = new Resource();
-        resource.setMime("image/png");
+        resource.setMime("mImage/png");
         resource.setData(data);
 
         String tag = EvernoteUtil.createEnMediaTag(resource);
@@ -226,6 +228,12 @@ public class MainActivity extends ActionBarActivity {
 
                 } else {
                     Toast.makeText(this, "Not success", Toast.LENGTH_SHORT).show();
+                }
+                break;
+            case 0:
+                if (requestCode == REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+                    mImage = (Bitmap) data.getExtras().get("data");
+                    saveNote();
                 }
                 break;
         }
