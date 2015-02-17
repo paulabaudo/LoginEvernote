@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -20,11 +22,15 @@ import com.evernote.client.android.EvernoteSession;
 import com.evernote.client.android.EvernoteUtil;
 import com.evernote.client.android.OnClientCallback;
 import com.evernote.edam.notestore.NoteStore;
+import com.evernote.edam.type.Data;
 import com.evernote.edam.type.LinkedNotebook;
 import com.evernote.edam.type.Note;
 import com.evernote.edam.type.Notebook;
+import com.evernote.edam.type.Resource;
 import com.evernote.thrift.transport.TTransportException;
 
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -85,9 +91,18 @@ public class MainActivity extends ActionBarActivity {
         });
     }
 
+    private byte[] convertBitmapImageToByteArray(Bitmap image) {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        image.compress(Bitmap.CompressFormat.PNG, 100, stream);
+        return stream.toByteArray();
+    }
+
     public void saveNote() {
-        String title = "Testing title";
-        String content = "Testing content";
+        Bitmap image = BitmapFactory.decodeResource(getResources(), R.drawable.flor);
+        byte[] imageByte = convertBitmapImageToByteArray(image);
+
+        String title = "Final test title";
+        String content = "Final test content";
         if (TextUtils.isEmpty(title) || TextUtils.isEmpty(content)) {
             Toast.makeText(getApplicationContext(), "Content vacío", Toast.LENGTH_LONG).show();
             return;
@@ -96,8 +111,26 @@ public class MainActivity extends ActionBarActivity {
         Note note = new Note();
         note.setTitle(title);
 
+        //TODO: Creating data
+        Data data = new Data();
+        data.setBodyHash(EvernoteUtil.hash(imageByte));
+        data.setBody(imageByte);
+
+        //TODO: Creating resource
+        Resource resource = new Resource();
+        resource.setMime("image/png");
+        resource.setData(data);
+
+        String tag = EvernoteUtil.createEnMediaTag(resource);
+
+        List<Resource> resourceList = new ArrayList<>();
+        resourceList.add(resource);
+        note.setResources(resourceList);
+
         //TODO: line breaks need to be converted to render in ENML
-        note.setContent(EvernoteUtil.NOTE_PREFIX + content + EvernoteUtil.NOTE_SUFFIX);
+        String noteBody = EvernoteUtil.NOTE_PREFIX + content + "<br/>" + tag + EvernoteUtil.NOTE_SUFFIX;
+
+        note.setContent(noteBody);
 
         if(!mEvernoteSession.getAuthenticationResult().isAppLinkedNotebook()) {
             //If User has selected a notebook guid, assign it now
@@ -109,7 +142,7 @@ public class MainActivity extends ActionBarActivity {
                 mEvernoteSession.getClientFactory().createNoteStoreClient().createNote(note, mNoteCreateCallback);
             } catch (TTransportException exception) {
                 Log.e(LOGTAG, "Error creating notestore", exception);
-                Toast.makeText(getApplicationContext(), "Error al crear NoteStore", Toast.LENGTH_LONG).show();
+                Toast.makeText(getApplicationContext(), "Error creating notestore", Toast.LENGTH_LONG).show();
                 removeDialog(101);
             }
         } else {
