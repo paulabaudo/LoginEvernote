@@ -120,7 +120,7 @@ public class MainActivity extends ActionBarActivity {
 
         //TODO: Creating resource
         Resource resource = new Resource();
-        resource.setMime("mImage/png");
+        resource.setMime("image/png");
         resource.setData(data);
 
         String tag = EvernoteUtil.createEnMediaTag(resource);
